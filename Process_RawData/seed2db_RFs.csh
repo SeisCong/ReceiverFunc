@@ -1,6 +1,6 @@
 #/bin/csh
 ##################################################################
-# extract EQ waveform seed files into Antelope database tables
+# Extract EQ waveform seed files into Antelope database tables
 #
 #  Cong Li
 # 
