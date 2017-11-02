@@ -1,0 +1,9 @@
+sts2_g1         V    c yes   1.4158000e-03   1       1500         1.000000 /Users/xtyang/Work/OIINK/oiink/portable_dbmaster/nom_response    sts2-g1                           1447348962.40173
+sts2_g2         V    c yes   1.4158000e-03   1       1500         1.000000 /Users/xtyang/Work/OIINK/oiink/portable_dbmaster/nom_response    sts2-g2                           1447348962.40308
+sts2_g3         V    c yes   3.0023787e-02   1       1500         1.000000 /Users/xtyang/Work/OIINK/oiink/portable_dbmaster/nom_response    sts2-g3                           1447348962.40396
+sts2-g3-m1      V    c yes   3.0023787e-02   1       1500         1.000000 /Users/xtyang/Work/OIINK/oiink/portable_dbmaster/nom_response    sts2-g3-mod                       1447348962.40482
+cmg3t           V    v yes   2.1730000e-02   1       1500         1.000000 /Users/xtyang/Work/OIINK/oiink/portable_dbmaster/nom_response    cmg3t                             1447348962.40562
+trillium_240    V    v yes  -9.0375000e-01   1       1200         1.000000 /Users/xtyang/Work/OIINK/oiink/portable_dbmaster/nom_response    trillium_240                      1447348962.40645
+trillium_240_1  V    v yes  -9.0375000e-01   1       1197         1.000000 /Users/xtyang/Work/OIINK/oiink/portable_dbmaster/nom_response    trillium_240_1                    1447348962.42145
+trillium_240_2  V    v yes  -9.0375000e-01   1       1168         1.000000 /Users/xtyang/Work/OIINK/oiink/portable_dbmaster/nom_response    trillium_240_2                    1447348962.42225
+loop            D    -       1.0000000e+00   0          1         1.000000 /Users/xtyang/Work/OIINK/oiink/portable_dbmaster/nom_response    loop                              1447348962.42303

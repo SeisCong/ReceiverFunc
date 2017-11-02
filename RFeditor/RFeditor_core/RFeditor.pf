@@ -1,0 +1,296 @@
+# Stations with number of events (rf count/2) less than this will be 
+# skipped automatically with a log message
+minimum_number_receiver_functions 3
+
+# First arrival time shift for plot (default displays FA at time 0).
+#+, shift to positive time axis; -, shift left to negative time axis.
+#then use_arrival_data is set to false. this is the FA time in the data.
+#the trace will be plotted starting from 0 seconds.
+FA_reference_time 0.0
+use_arrival_data true	
+use_decon_in_editing true
+use_netmag_table true
+
+radial_channel_key	IR
+transverse_channel_key	IT
+vertical_channel_key IZ
+
+edit_on_channel radial
+
+#*** apply prefilter before stacking and displaying
+#prefilter is highly recommended for pure-spike RF data.
+#otherwise, stacking is not working as expected.
+apply_prefilter true
+wavelet_type gaussian  # available types: filter, gaussian
+filter BW 0.2 2 2 2
+# sample parameters for other filter_type, e.g., gaussian
+data_sample_interval 0.025
+wavelet_length 301    #at least 3 times the width parameter in time.
+wavelet_width_parameter 0.2
+wavelet_normalization_method PEAK
+#*** end of prefilter parameters
+
+#output parameters
+##ignored if reading from wfdisc (use_wfdisc_in is true)
+save_wfdisc_table false #true  # use channel keys define above writing to the table.
+save_wfprocess_table true
+save_3C_data true  #data will be saved in datatype 3c. 
+					#this is applicable only if input is wfprocess and with datatype 3c
+save_decon_table true  #decon parameters for all three components are saved.
+					#ignored if not 'use_decon_in_editing' is false.
+save_vertical_channel true  #automatically true if input datatype is 3c (i.e., ThreeComponentSeismogram)
+save_metadata_only false
+save_filtered_data false   # this par is suggested to be false
+
+output_dfile_base RFedited  # dfile will be something like: RFedited_KF28.IR for radial and .IT for transverse.
+							# dfile uses the same channel keys as in this pf.
+#mdl parameters.
+use_wfdisc_in false  #use wfprocess table if false for input data.
+
+#FA detection parameters. Not required if FA detection is not turned on. Use -fa option when running RFeditor to turn it on.
+#sensitivity in amplitude: turn on detection only if the amplitude is 
+#>= this value. this is used in TraceEditOperator object.
+FA_sensitivity 10e-4
+
+#time window length for FA detection.
+#program searches for FA within this length after first non-zero
+#values (>=FA_sensitivity)
+#impirical value for reference: >=4*gaussian_sigma for gaussian
+#or 1.5*ricker_side_lope_distance for ricker
+FA_detect_length 0.8
+
+FA_search_TW_start -5
+FA_search_TW_end 5
+
+#this is referenced when detecting the first arrivals
+#this is the wavelet type used to generate the receiver functions
+#, which is input of the RFeditor program. 
+# ** use ricker if ricker was used in either deconvolution of pre-filtering process.
+#available types: SPIKE, GAUSSIAN, RICKER (CASE SENSITIVE)
+#this parameter is readin just once when the TraceEditOperator object is built.
+data_shaping_wavelet_type GAUSSIAN
+
+#this is required under GUIoff mode.
+auto_edit_parameters &Arr{	
+	apply_klat false
+
+	apply_decon_ALL true
+	apply_kdnitn false
+	apply_kdnspike false
+	apply_kdepsilon false
+	apply_kdpkamp false
+	apply_kdavamp false
+	apply_kdsnr false
+	apply_kldsi true
+
+	apply_knfa true
+	apply_kgpc true
+	apply_kca true
+
+	apply_klsw true
+	apply_klxcor true
+	apply_klrfqi true
+	
+	NFA_tolerance_TW_start -2
+	NFA_tolerance_TW_end 5
+	PCoda_search_TW_start 5.0
+	PCoda_search_TW_end 35.0
+	CodaCA_search_TW_start 2.0
+	CodaCA_search_TW_end 20.0
+	RefXcor_search_TW_start -1
+	RefXcor_search_TW_end 10
+	max_trace_abs_amplitude 100    #true amplitude (as stored in the data).
+	CodaCA_tolerance_twin_length 5
+	PCoda_grow_tolerance 0.0
+	RFQI_weight_stackweight 0.2
+	RFQI_weight_refxcorcoe  0.3
+	RFQI_weight_successindex  0.5
+	rfqi_min  0.6
+	
+	niteration_min 20
+	niteration_max 1000
+	nspike_min 20
+	nspike_max 1000
+	epsilon_min 0.0
+	epsilon_max 50.0
+	peakamp_min 0.001
+	peakamp_max 1
+	averamp_min 0.0
+	averamp_max 1
+	rawsnr_min 1
+	rawsnr_max 1000
+	
+	stackweight_min 0.2
+	xcorcoe_min  0.5
+	dsi_min 0.3
+	stacktype RobustSNR
+	robust_window_start -1
+	robust_window_end 10	
+}
+######## parameters for TraceEditPlot & TraceEditOperator procedures. GUI mode
+gui_edit_parameters &Arr{
+	#stacking window params for robustSNR stacking.
+	#stacktype RobustSNR
+	robust_window_start -1
+	robust_window_end 10
+		
+	NFA_tolerance_TW_start -2
+	NFA_tolerance_TW_end 5
+	PCoda_search_TW_start 5
+	PCoda_search_TW_end 35.0
+	PCoda_grow_tolerance  0.0
+	max_trace_abs_amplitude 100    #true amplitude (as stored in the data).
+	CodaCA_search_TW_start 2.0
+	CodaCA_search_TW_end 20.0
+	CodaCA_tolerance_twin_length 5   #recommend: 5*(filter width in time-domain).
+	RefXcor_search_TW_start -1
+    RefXcor_search_TW_end 10
+    
+    #decon parameter threshold: default values.
+	niteration_min 20
+	niteration_max 1000
+	nspike_min 20
+	nspike_max 1000
+	epsilon_min 0.0
+	epsilon_max 50.0
+	peakamp_min 0.001
+	peakamp_max 1
+	averamp_min 0.0
+	averamp_max 1
+	rawsnr_min 1
+	rawsnr_max 1000
+}
+################################################################
+#specify metadata lists (names)
+mdlist_ensemble ensemble_mdl
+mdlist_wfdisc_in trace_mdl_wfdisc
+mdlist_wfdisc_out output_mdl_wfdisc
+mdlist_wfprocess_in trace_mdl_wfprocess_decon
+mdlist_wfprocess_out output_mdl_wfprocess
+
+# output and input talbe types should be the same. i.e., 
+# must use wfdisc as output if use it as input. same for wfprocess
+ensemble_mdl	&Tbl{
+    sta string
+}
+trace_mdl_wfdisc	&Tbl{
+    wfdisc.sta string
+    wfdisc.chan string
+    wfdisc.time real
+    wfdisc.wfid integer
+    wfdisc.chanid integer
+    wfdisc.jdate integer
+    wfdisc.endtime real
+    wfdisc.nsamp integer
+    wfdisc.samprate real
+    wfdisc.calib real
+    wfdisc.calper real
+    wfdisc.instype string
+    wfdisc.segtype string
+    wfdisc.datatype string
+    wfdisc.clip string
+    wfdisc.dir string
+    wfdisc.dfile string
+    wfdisc.foff integer
+    wfdisc.commid integer
+    sta string
+    chan string
+    time real
+    nsamp integer
+    samprate real
+    #needed for reading arrival information
+    atime real
+    arrival.sta string
+    #when using arrival table, timeres is used when checking for duplicate traces.
+    #smaller abs timeres will be kept.
+    assoc.timeres real
+    #needed when running with -firstarrival option.
+    assoc.esaz real
+    assoc.seaz real
+}
+trace_mdl_wfprocess_decon &Tbl{
+	pwfid int
+	dir string
+	dfile string
+    time real
+    endtime real
+    nsamp integer
+    samprate real
+	datatype string
+	timetype string
+	foff integer
+	wfprocess.algorithm string
+	#program is hard-coded with this format: decon.****.
+	#Do not just use the attribute name.
+    decon.nspike integer
+    decon.rawsnr real
+    decon.averamp real
+    decon.epsilon real
+    decon.niteration integer
+    decon.peakamp real
+    decon.chan string
+    evid integer
+	sta string
+    chan string
+    #needed for reading arrival information
+    atime real
+    arrival.sta string
+    #when using arrival table, timeres is used when checking for duplicate traces.
+    #smaller abs timeres will be kept.
+    assoc.timeres real
+    #needed when running with -firstarrival option.
+    assoc.esaz real
+    assoc.seaz real
+    
+    #needed when use_netmag_table is set to true
+    #!!!!!please comment out if the above attribute is set to false.
+    magtype string
+    magnitude real
+}
+trace_mdl_wfprocess &Tbl{
+	pwfid int
+	dir string
+	dfile string
+    time real
+    endtime real
+    nsamp integer
+    samprate real
+	datatype string
+	timetype string
+	foff integer
+	evid integer
+	sta string
+    chan string
+    wfprocess.algorithm string
+    
+}
+
+output_mdl_wfdisc	&Tbl{
+    sta string
+    chan string
+    time real
+    endtime real
+    nsamp integer
+    samprate real
+    datatype string
+    dir string
+    dfile string
+    foff integer
+}
+output_mdl_wfprocess &Tbl{
+	pwfid int
+	time real
+	endtime real
+	dir string
+	dfile string
+	datatype string
+	timetype string
+	samprate real
+	nsamp int
+	foff integer
+	wfprocess.algorithm string
+	#evid integer
+	#sta string
+    #chan string
+}
+pf_revision_time 1404995498
