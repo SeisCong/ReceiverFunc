@@ -1,0 +1,2 @@
+etopo1_bed_c_i2.bin filter=lfs diff=lfs merge=lfs -text
+etopo1_bed_c_i2.hdr filter=lfs diff=lfs merge=lfs -text

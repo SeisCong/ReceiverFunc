@@ -1,0 +1,15 @@
+wdb_rivers_c.b filter=lfs diff=lfs merge=lfs -text
+wdb_rivers_f.b filter=lfs diff=lfs merge=lfs -text
+wdb_rivers_i.b filter=lfs diff=lfs merge=lfs -text
+wdb_rivers_l.b filter=lfs diff=lfs merge=lfs -text
+gshhs_i.b filter=lfs diff=lfs merge=lfs -text
+wdb_borders_i.b filter=lfs diff=lfs merge=lfs -text
+wdb_borders_l.b filter=lfs diff=lfs merge=lfs -text
+gshhs_l.b filter=lfs diff=lfs merge=lfs -text
+wdb_borders_c.b filter=lfs diff=lfs merge=lfs -text
+wdb_borders_f.b filter=lfs diff=lfs merge=lfs -text
+wdb_rivers_h.b filter=lfs diff=lfs merge=lfs -text
+gshhs_f.b filter=lfs diff=lfs merge=lfs -text
+gshhs_h.b filter=lfs diff=lfs merge=lfs -text
+gshhs_c.b filter=lfs diff=lfs merge=lfs -text
+wdb_borders_h.b filter=lfs diff=lfs merge=lfs -text
