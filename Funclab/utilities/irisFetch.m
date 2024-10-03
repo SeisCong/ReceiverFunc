@@ -57,7 +57,6 @@ classdef irisFetch
  * <http://www.gnu.org/licenses/>.
  ******************************************************************************
    %}
-
    properties (Constant = true)
      VERSION           = '2.0.10';  % irisFetch version number
      DATE_FORMATTER    = 'yyyy-mm-dd HH:MM:SS.FFF'; %default data format, in ms
