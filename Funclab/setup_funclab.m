@@ -88,6 +88,11 @@ if str2double(v(1:3)) < 8.4
     disp('Warning, Matlab graphics changed after version R2014b, so visuals may be buggy.')
     disp('Continuing...')
 end
+%add by Cong, to solve wrong java class being picked in high version of MATLAB
+if str2double(v(1:3))==24 || str2double(v(1:3))==23
+    disp('Change Jave setting for version 2024a or 2023b')
+    java.lang.System.setProperty("javax.xml.stream.XMLInputFactory", "com.sun.xml.internal.stream.XMLInputFactoryImpl");
+end
 
 
 %added to test for version 10/02/2012 MJF
@@ -258,7 +263,7 @@ if installMatTaup
     disp('*******************************************')
     disp(' ')
     addpath(matpath, '-end');
-    savepath
+    savepath('./pathdef.m')
     disp('Updating static java classpath')
     disp('*******************************************')
     %clpath=which('classpath.txt');
@@ -302,7 +307,7 @@ if installIrisWS
     disp('*******************************************')
     disp(' ')
     addpath(matpath, '-end');
-    savepath
+    savepath('./pathdef.m')
     disp('Updating static java classpath')
     disp('*******************************************')
     %clpath=which('classpath.txt');
@@ -378,5 +383,5 @@ set(0,'DefaultFigurePosition',[0 0 520 380])
 set(0,'DefaultFigureCreateFcn',{@movegui_kce,'center'})
 set(0,'DefaultAxesFontName','FixedWidth')
 set(0,'DefaultAxesFontSize',14)
-savepath
+savepath('./pathdef.m')
 disp('----------------------------------------------------------------------')
