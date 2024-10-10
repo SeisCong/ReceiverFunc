@@ -632,6 +632,9 @@ for idir=1:size(DataDirs,1)
     fprintf('***** Working on %s *****\n', DataStructure(idir).EventName);
     
     for istation=1:length(DataStructure(idir).Stations)
+        if(istation==38)
+            a=1;
+        end
         % First run for the EQR
         % Try to read the seismograms from sac files
         %fprintf('%s %s %s\n',DataStructure(idir).EastFiles(istation).files{1}, DataStructure(idir).NorthFiles(istation).files{1}, DataStructure(idir).VerticalFiles(istation).files{1} );
@@ -644,16 +647,13 @@ for idir=1:size(DataDirs,1)
 
         % Check if the length of waveform is consistent with the
         % requirment, add by Cong
-        % Require_LenR=floor((params.EQRRawParams.TBEFORE+params.EQRRawParams.TAFTER));
-        % Require_LenT=floor((params.EQTRawParams.TBEFORE+params.EQTRawParams.TAFTER));
-        % if (hdr.times.e-hdr.times.b)<Require_LenR || (hdr.times.e-hdr.times.b)<Require_LenT
-        %     disp([DataStructure(idir).Stations{istation} ', length of raw waveform is too short, skip!']);
-        %     continue;
-        % end
-        if length(eseis)~=hdr.trcLen || length(nseis)~=hdr.trcLen || length(zseis)~=hdr.trcLen
-            disp([DataStructure(idir).Stations{istation} ', hdr length is not consistent with the waveform length, skip!']);
+        Require_LenR=int((params.EQRRawParams.TBEFORE+params.EQRRawParams.TAFTER));
+        Require_LenT=int((params.EQTRawParams.TBEFORE+params.EQTRawParams.TAFTER));
+        Require_Len=min(Require_LenR,Require_LenT);
+        if (hdr.times.e-hdr.times.b)<Require_LenR || (hdr.times.e-hdr.times.b)<Require_LenT
+            print([DataStructure(idir).Stations{istation} ', Length of raw waveform is too short, skip!'])
             continue;
-        end
+        if length(eseis)~=
 
         % Get arrival times with taup
         tt = taupTime('ak135',hdr.event.evdp,optR.PHASENM,'deg',hdr.evsta.gcarc);
