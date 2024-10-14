@@ -1089,7 +1089,7 @@ else
 end
 
 if matlab.internal.feature('mpm')
-    filetimestamp = 0x624268791BBCEu64;
+    filetimestamp = 0x6246641EC8A72u64;
     p = [userpath separator getenv('MATLABPATH') separator p separator ...
         matlab.internal.packages.getPathForPackagesInstalledAfter(filetimestamp)];
 else

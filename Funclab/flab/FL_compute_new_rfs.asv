@@ -67,6 +67,13 @@ function FL_compute_new_rfs(params,h,WaitGui)
 %  Created 05/05/2015. Rob Porritt
 %
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Modification History by Cong Li (congli87@arizona.edu)
+%% 1. add a output of original spike time series in iterdecon (change include processRFiter.m and makeRFitdecon.m)
+%% 2. Fix bugs for inconsisent hdr.Length or the length is too short
+%% 3. Force to skip calculation if the file has been existed already
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %% Error checking
 %   Users given free edit boxes for a handful of parameters
 %   TBEFORE < TAFTER
@@ -626,15 +633,56 @@ Vs = 3.36;
 % Cut to time window
 % Compute RF
 % Write to output directory
+
+overwrite=0; % Temporary paramter; It can be added into params in UI later; add by Cong
 for idir=1:size(DataDirs,1)
     outputDir = DataStructure(idir).OutputDir;
     % Let the user know the progress
-    fprintf('***** Working on %s *****\n', DataStructure(idir).EventName);
-    
+    fprintf('***** Working on %s *****\n', DataStructure(idir).EventName); 
     for istation=1:length(DataStructure(idir).Stations)
-        if(istation==38)
-            a=1;
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Check the exist files and decide to skip or overwrite; add by Cong
+        % this only works for calculation of both r and r RFs now, update
+        % will be made later!
+        if overwrite==0
+        switch params.EQRDeconType
+            case 'Iterative'
+                deconType='i';
+            case 'Waterlevel'
+                deconType = 'w';
+            case 'Damped'
+                deconType = 'd';
         end
+        rfilelead = sprintf('*_%s_%1.1f.%s.',DataStructure(idir).Stations{istation}, rfOptR.F0, deconType);
+        tfilelead = sprintf('*_%s_%1.1f.%s.',DataStructure(idir).Stations{istation}, rfOptT.F0, deconType); 
+        spfilelead = sprintf('*_%s.%s.',DataStructure(idir).Stations{istation}, deconType);
+        if (length(dir([outputDir rfilelead 'eqr']))==1 && length(dir([outputDir tfilelead 'eqt']))==1 &&...
+           length(dir([outputDir spfilelead 'spr']))==1 && length(dir([outputDir spfilelead 'spt']))==1 &&...
+           length(dir([outputDir rfilelead 'r']))==1 && length(dir([outputDir rfilelead 't']))==1 && ...
+           length(dir([outputDir rfilelead 'z']))==1)
+         
+         eqrfilename=dir([outputDir rfilelead 'eqr']);
+         eqtfilename=dir([outputDir tfilelead 'eqt']);
+         rfilename=dir([outputDir rfilelead 'r']);
+         tfilename=dir([outputDir rfilelead 't']);
+         zfilename=dir([outputDir rfilelead 'z']);
+
+         DataStructure(idir).EQRFiles(istation).name = eqrfilename; 
+         DataStructure(idir).EQTFiles(istation).name = eqtfilename;
+         DataStructure(idir).EQRLead(istation).name  = eqrfilename[1:end-3];
+         DataStructure(idir).EQTLead(istation).name  = eqtfilename[1:end-3];
+
+         DataStructure(idir).RFiles(istation).name   = rfilename;
+         DataStructure(idir).TFiles(istation).name   = tfilename;
+
+         continue;
+        % else
+        %     disp('Error, need to debug for overwrite!');
+        %     return
+        end
+        clear deconType rfilelead tfilelead spfilelead eqrfilename eqtfilename
+        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % First run for the EQR
         % Try to read the seismograms from sac files
         %fprintf('%s %s %s\n',DataStructure(idir).EastFiles(istation).files{1}, DataStructure(idir).NorthFiles(istation).files{1}, DataStructure(idir).VerticalFiles(istation).files{1} );
@@ -647,14 +695,17 @@ for idir=1:size(DataDirs,1)
 
         % Check if the length of waveform is consistent with the
         % requirment, add by Cong
-        Require_LenR=int((params.EQRRawParams.TBEFORE+params.EQRRawParams.TAFTER));
-        Require_LenT=int((params.EQTRawParams.TBEFORE+params.EQTRawParams.TAFTER));
-        Require_Len=min(Require_LenR,Require_LenT);
-        if (hdr.times.e-hdr.times.b)<Require_LenR || (hdr.times.e-hdr.times.b)<Require_LenT
-            print([DataStructure(idir).Stations{istation} ', Length of raw waveform is too short, skip!'])
+        if length(eseis)~=hdr.trcLen || length(nseis)~=hdr.trcLen || length(zseis)~=hdr.trcLen
+            disp([DataStructure(idir).Stations{istation} ', hdr length is not consistent with the waveform length, skip!']);
             continue;
-        if length(eseis)~=
-
+        end
+  
+        % check if the length of waveform is consistent with the
+        % requirement, add by Cong
+        if hdr.times.e-hdr.times.b<=(params.EQRRawParams.TBEFORE+params.EQRRawParams.TAFTER)/2
+             disp([DataStructure(idir).Stations{istation} ', the waveform length is less than half of required time segment, skip!']);
+             continue;
+        end
         % Get arrival times with taup
         tt = taupTime('ak135',hdr.event.evdp,optR.PHASENM,'deg',hdr.evsta.gcarc);
         if ~isempty(tt)
@@ -749,13 +800,13 @@ for idir=1:size(DataDirs,1)
                 % Switch between waterlevel, damped, and iterative decon
                 switch params.EQRDeconType
                     case 'Iterative'
-                        [rftime, rfseis, rfhdr, ierr] = processRFiter(numer, denom, hdrR, rfOptR , false);
+                        [rftime, rfseis, rspikes, rfhdr, ierr] = processRFiter(numer, denom, hdrR, rfOptR , false);
                         %deconType = sprintf('iterative_%03d',rfOpt.ITERMAX);
                         if ierr == 1
                             fprintf('Error, rms array empty for %s\n',strtrim(hdrR.station.kstnm))
-                            %continue
+                            continue  % released by cong
                         end
-                        deconType = 'i';
+                        deconType = 'i'; 
                     case 'Waterlevel'
                         switch params.EQRRFParams.WLNoiseOrDenomFlag
                             case 'Max denominator'
@@ -763,11 +814,11 @@ for idir=1:size(DataDirs,1)
                             case 'Max noise'
                                 [rftime, rfseis, rfhdr] = processRFwaterNoise(numer, denom, hdrR, rfOptR , false);
                         end
-                        deconType = 'w';
+                        deconType = 'w'; 
                         %deconType = sprintf('waterlevel_%4.5g',rfOpt.WLEVEL);
                     case 'Damped'
                         [rftime, rfseis, rfhdr] = processRFdamp(numer, denom, hdrR, rfOptR, false);
-                        deconType = 'd';
+                        deconType = 'd'; 
                         
                 end
                 % If SRF flip time and amplitude
@@ -817,19 +868,37 @@ for idir=1:size(DataDirs,1)
                 %fprintf('%s_%s_%1.1f.%s.',network, station, rfOptR.F0, deconType);
                 eqrfilelead = sprintf('%s_%s_%1.1f.%s.',network, station, rfOptR.F0, deconType);
                 eqrfilename = sprintf('%seqr',eqrfilelead);
+             
                 zfilename = sprintf('%sz',eqrfilelead);
                 tfilename = sprintf('%st',eqrfilelead);
                 rfilename = sprintf('%sr',eqrfilelead);
+
+                if strcmp(params.EQRDeconType,'Iterative')
+                    sprfilelead = sprintf('%s_%s.%s.',network, station, deconType);
+                    sprfilename = sprintf('%sspr',sprfilelead); % add by Cong
+                end
+
                 DataStructure(idir).EQRLead(istation).name = eqrfilelead;
                 if skipFlagT == 1
                     eqtfilename = sprintf('%seqt',eqrfilelead); % need to write a dead trace if the other RF is missed
                     fullOutFileName = fullfile(outputDir, eqtfilename);
                     writeSAC(fullOutFileName, rfhdr, 0*rfseis);
                     DataStructure(idir).EQTFiles(istation).name = eqtfilename;
+
+                    if strcmp(params.EQRDeconType,'Iterative')
+                        sptfilename = sprintf('%sspt',sprfilelead); % add by Cong
+                        fullOutFileName = fullfile(outputDir, sptfilename);
+                        writeSAC(fullOutFileName, rfhdr, 0*rspikes);
+                    end
                 end
                 fullOutFileName = fullfile(outputDir, eqrfilename);
                 writeSAC(fullOutFileName,rfhdr, rfseis);
                 DataStructure(idir).EQRFiles(istation).name = eqrfilename;
+              
+                if strcmp(params.EQRDeconType,'Iterative') %% add by Cong
+                     fullOutFileName = fullfile(outputDir, sprfilename);
+                     writeSAC(fullOutFileName, rfhdr, rspikes);
+                end
                 
                 if strcmp(params.EQRRFParams.Numerator,'Z') || strcmp(params.EQRRFParams.Denominator,'Z')
                     fullOutFileName = fullfile(outputDir, zfilename);
@@ -911,15 +980,15 @@ for idir=1:size(DataDirs,1)
                 % Switch between waterlevel, damped, and iterative decon
                 switch params.EQTDeconType
                     case 'Iterative'
-                        [rftime, rfseis, rfhdr, ierr] = processRFiter(numer, denom, hdrT, rfOptT , false);
+                        [rftime, rfseis,rspikes, rfhdr, ierr] = processRFiter(numer, denom, hdrT, rfOptT , false);
                         %deconType = sprintf('iterative_%03d',rfOpt.ITERMAX);
                         if ierr == 1
                             fprintf('Error, rms array empty for %s\n',strtrim(hdrT.station.kstnm))
-                            %continue
+                            continue  % released by cong
                         end
                         if skipFlagR == 1
                             deconType = 'i';
-                        end
+                        end   
                     case 'Waterlevel'
                         switch params.EQTRFParams.WLNoiseOrDenomFlag
                             case 'Max denominator'
@@ -929,13 +998,13 @@ for idir=1:size(DataDirs,1)
                         end
                         if skipFlagR == 1
                             deconType = 'w';
-                        end
+                        end  
                         %deconType = sprintf('waterlevel_%4.5g',rfOpt.WLEVEL);
                     case 'Damped'
                         [rftime, rfseis, rfhdr] = processRFdamp(numer, denom, hdrT, rfOptT, false);
                         if skipFlagR == 1
                             deconType = 'd';
-                        end
+                        end   
                 end
                 % If SRF flip time and amplitude
                 if strcmp(optT.PHASENM,'S') || strcmp(optT.PHASENM,'SKS')
@@ -965,19 +1034,38 @@ for idir=1:size(DataDirs,1)
                 % the file name. So we need to use the EQR gaussian here.
                 eqtfilelead = sprintf('%s_%s_%1.1f.%s.',network, station, rfOptR.F0, deconType);
                 eqtfilename = sprintf('%seqt',eqtfilelead);
+                
                 zfilename = sprintf('%sz',eqtfilelead);
                 tfilename = sprintf('%st',eqtfilelead);
                 rfilename = sprintf('%sr',eqtfilelead);
+               
+                if strcmp(params.EQRDeconType,'Iterative')% add by Cong
+                    sptfilelead = sprintf('%s_%s.%s.',network, station, deconType);
+                    sptfilename = sprintf('%sspt',sptfilelead); 
+                end
+
                 DataStructure(idir).EQTLead(istation).name = eqtfilelead;
                 if skipFlagR == 1
                     eqrfilename = sprintf('%seqr',eqtfilelead); % need to write a dead trace if the other RF is missed
                     fullOutFileName = fullfile(outputDir, eqrfilename);
                     writeSAC(fullOutFileName, rfhdr, 0*rfseis);
                     DataStructure(idir).EQRFiles(istation).name = eqrfilename;
+
+                    if strcmp(params.EQRDeconType,'Iterative')
+                        sprfilename = sprintf('%sspr',sptfilelead); % add by Cong
+                        fullOutFileName = fullfile(outputDir, sprfilename);
+                        writeSAC(fullOutFileName, rfhdr, 0*rspikes);
+                    end
+
                 end
                 fullOutFileName = fullfile(outputDir, eqtfilename);
                 writeSAC(fullOutFileName,rfhdr, rfseis);
                 DataStructure(idir).EQTFiles(istation).name = eqtfilename;
+
+                if strcmp(params.EQRDeconType,'Iterative') %% add by Cong
+                     fullOutFileName = fullfile(outputDir, sptfilename);
+                     writeSAC(fullOutFileName, rfhdr, rspikes);
+                end
                 
                 if strcmp(params.EQTRFParams.Numerator,'Z') || strcmp(params.EQTRFParams.Denominator,'Z')
                     fullOutFileName = fullfile(outputDir, zfilename);

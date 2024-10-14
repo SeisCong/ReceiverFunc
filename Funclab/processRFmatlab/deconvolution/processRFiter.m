@@ -1,4 +1,4 @@
-function [time, rfseis, rfhdr, ierr] = processRFiter( nseis, dseis, hdr, opt , isVb );
+function [time, rfseis,rspikes, rfhdr, ierr] = processRFiter( nseis, dseis, hdr, opt , isVb );
 
 % Make a receiver function using makeRFiter and process the sac style header file
 %
@@ -55,7 +55,7 @@ nt = size(nseis, 1); % number of samples
 % call the function
 tshift=0.0;
 
-[rfseis, rms] = makeRFitdecon( nseis, dseis, ...
+[rfseis,rspikes,rms] = makeRFitdecon( nseis, dseis, ...
                                dt, opt.T0, opt.T1, tshift, opt.F0,...
 			       opt.ITERMAX, opt.MINDERR , isVb );
 
@@ -64,6 +64,7 @@ if(numel(rms)==0),
   ierr=1;
   time = [];
   rfseis = [];
+  rspikes =[]; % add by Cong
   rfhdr = [];
   return
 end
@@ -73,6 +74,7 @@ time = opt.T0 + dt*(0:1:(length(rfseis)-1));
 
 % Remove the last part
 rfseis = rfseis(time<=opt.T1);
+rspikes = rspikes(time<=opt.T1); % add by Cong
 time = time(time<=opt.T1); 
 
 % make the header using the original header

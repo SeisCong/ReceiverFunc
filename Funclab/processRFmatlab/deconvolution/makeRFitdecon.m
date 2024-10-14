@@ -1,4 +1,4 @@
-function [RFI,RMS] = makeRFitdecon(UIN,WIN,DT,...
+function [RFI,RSPIKE,RMS] = makeRFitdecon(UIN,WIN,DT,...
 				   MINLAG,MAXLAG,TSHIFT,F0,...
 				   ITMAX,MINDERR,ISVB)
 % Iterative time domain deconvolution 
@@ -208,19 +208,23 @@ shifti = round(TSHIFT/DT);
 if( shifti == 0 ),
   % no time shift
   RFI = RFP(idx1:idx2);
+  RSPIKE=P0(idx1:idx2); %% add by Cong
 elseif( shifti > 0 ),
   % positive time shift: use part of signal or add zeros
   idx1 = idx1 -shifti;
   if( idx1 <= 0 ),
     RFI= [zeros(1,1-shifti), RFP(1:idx2)];
+    RSPIKE=[zeros(1,1-shifti),P0(idx1:idx2)];%% add by Cong
   else
     RFI= RFP(idx1:idx2);
+    RSPIKE=P0(idx1:idx2);%% add by Cong
   end
 else
    % negative time shift: truncate 
   idx1 = idx1 - shifti;
   idx2 = min(numel(RFP),idx2-shifti);
-  RFI = RFP(idx1:idx2)
+  RFI = RFP(idx1:idx2);
+  RSPIKE=P0(idx1:idx2);%% add by Cong
 end
 
 

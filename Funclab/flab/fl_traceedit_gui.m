@@ -105,7 +105,7 @@ switch LoadOff
         end
     case 0
         for n = 1:size(CurrentRecords,1)
-%             if CurrentRecords{n,5} == 1
+            if CurrentRecords{n,5} == 1
 %             if CurrentRecords{n,21} >= 0.05 && CurrentRecords{n,21} <= 0.06
 %                 [TempAmps,TIME] = fl_readseismograms([ProjectDirectory CurrentRecords{n,1} c_tail]);
             if CurrentRecords{n,22} >= 0 && CurrentRecords{n,22} <= 360
@@ -117,6 +117,7 @@ switch LoadOff
             MAG(n) = CurrentRecords{n,19};
             BAZ(n) = CurrentRecords{n,22};
             RAY(n) = CurrentRecords{n,21};
+            end
         end
     otherwise
         error ('Variable ''LoadOff'' should either be set to 1 or 0.')
@@ -427,6 +428,7 @@ for n = NumberOfTraces:-1:1
             H.lhandle(n) = line((Amplitudes(:,n) + n),TIME,'Color',[0 0 0],'LineWidth',1,'Tag','lhandle','UIContextMenu',H.cmenu(n));
         end
     end
+    if LoadOff==1 % add by Cong
     if CurrentRecords{n,5} == 0
         H.cmenu(n) = uicontextmenu;
         H.plot(n) = uimenu(H.cmenu(n),'Label','Plot Seismograms','Callback',{@plot_Callback});
@@ -457,6 +459,7 @@ for n = NumberOfTraces:-1:1
         %H.phandle(n) = patch (PFilledTrace(:,n)' + n,TimeAxis',[.8 .8 .8],'EdgeColor','none','Tag','phandle');
         %H.nhandle(n) = patch (NFilledTrace(:,n)' + n,TimeAxis',[.8 .8 .8],'EdgeColor','none','Tag','nhandle');
         H.lhandle(n) = line((Amplitudes(:,n) + n),TIME,'Color',[.5 .5 .5],'LineWidth',1,'Tag','lhandle','UIContextMenu',H.cmenu(n));
+    end
     end
     if strcmp(c_tail,'eqr') || strcmp(c_tail,'eqt')
         if exist('Tps')
@@ -512,7 +515,7 @@ H.cancelbutton = uicontrol ('Parent',H.figure,'Style','pushbutton','Units','norm
 % Add sorting options
 %--------------------------------------------------------------------------
 H.sortbytext = uicontrol('Parent',H.figure,'Style','Text','Units','Normalized','Tag','sortbytext','String','Sort by: ',...
-    'Position',[0.61 0.945 0.08 0.03],'FontUnits','Normalized','FontSize',0.5);
+    'Position',[0.57 0.945 0.08 0.03],'FontUnits','Normalized','FontSize',0.5);
 
 % Allow the user to sort by most options in current records
 % Mostly in order of the current records variable, but with ray parameter
@@ -526,19 +529,23 @@ SortOptions = {'Rayparameter', 'Backazimuth','Active','Gaussian','Radial RF fit'
 DefaultSortValue = 2; % Defaultin the popup menu to backazimuth
 % Popup menu to choose sort options
 H.sortbypopup = uicontrol('Parent',H.figure,'Style','Popupmenu','Units','Normalized','Tag','sortbypopup','String',SortOptions,...
-    'Value',DefaultSortValue,'Position',[0.69 0.95 0.12 0.03],'FontUnits','Normalized','FontSize',0.5);
+    'Value',DefaultSortValue,'Position',[0.63 0.95 0.12 0.03],'FontUnits','Normalized','FontSize',0.5);
 
 % Text to give option to reverse sorting
 H.reversesorttext = uicontrol('Parent',H.figure,'Style','Text','Units','Normalized','Tag','reversesorttext','String','Reverse?: ',...
-    'Position',[0.81 0.945 0.08 0.03],'FontUnits','Normalized','FontSize',0.5);
+    'Position',[0.74 0.945 0.08 0.03],'FontUnits','Normalized','FontSize',0.5);
 
 % Checkbox to reverse sorting
 H.reversesortcheckbox = uicontrol('Parent',H.figure,'Style','Checkbox','Units','Normalized','Tag','reversesortcheckbox','Value',0,...
-    'Position',[0.87 0.95 0.03 0.03]);
+    'Position',[0.80 0.95 0.03 0.03]);
 
 % Button to run sorting and re-draw
 H.sortbutton = uicontrol('Parent',H.figure,'Style','Pushbutton','Units','Normalized','Tag','sortbutton','String','Sort',...
-    'Position',[0.91 0.95 0.08 0.03],'FontUnits','Normalized','FontSize',0.5,'Callback',{@sort_trace_edit_callback});
+    'Position',[0.83 0.95 0.06 0.03],'FontUnits','Normalized','FontSize',0.5,'Callback',{@sort_trace_edit_callback});
+% add a button to show a figure with all selected RFs, add by Cong
+
+H.plotelection = uicontrol('Parent',H.figure,'Style','Pushbutton','Units','Normalized','Tag','sortbutton','String','Plot Selection',...
+    'Position',[0.90 0.95 0.08 0.03],'FontUnits','Normalized','FontSize',0.5,'Callback',{@plot_selection_callback});
 
 % For Meghan, button to deselect all. Should fill out with a "deselect by"
 % interface
@@ -547,7 +554,6 @@ H.deselectAllButton = uicontrol('Parent',H.figure,'Style','Pushbutton','Units','
 
 H.selectAllButton = uicontrol('Parent',H.figure,'Style','Pushbutton','Units','Normalized','Tag','selectAllButton','String','Select all',...
     'Position',[0.38 0.95 0.075 0.03],'FontUnits','Normalized','FontSize',0.5,'Callback',{@select_all_traces_callback});
-
 % Set the GUI handles for use in callback functions
 %--------------------------------------------------------------------------
 Handles = guihandles;
@@ -1251,9 +1257,10 @@ guidata(gcbf,h);
 % menu.
 %--------------------------------------------------------------------------
 function turnon_Callback (cbo,eventdata,handles)
-h = guidata(gcbf);
-n = find(h.UserData.turnon == cbo);
-CurrentRecords = h.UserData.traces;
+h = guidata(gcbf); 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+n = find(h.turnon == cbo); % modified by Cong,  original is h.UserData.turnon, a bug?
+CurrentRecords = h.traces;% modified by Cong,  original is h.UserData.traces, a bug?
 CurrentRecords{n,5} = 1;
 
 % Define 4 colors for editted and uneditted positive and negatives
@@ -1262,7 +1269,7 @@ unedittedNegativeColor = [.75 .4 .45];
 edittedPositiveColor = [1 .7961 0];
 edittedNegativeColor = [.7 .5573 .3];
 
-if CurrentRecords{n,4} == 0;
+if CurrentRecords{n,4} == 0
     set(h.phandle(n),'FaceColor',unedittedPositiveColor,'EdgeColor','none')
     set(h.nhandle(n),'FaceColor',unedittedNegativeColor,'EdgeColor','none')
     set(h.lhandle(n),'Color',[0 0 0],'LineWidth',1)
@@ -1271,7 +1278,7 @@ else
     set(h.nhandle(n),'FaceColor',edittedNegativeColor,'EdgeColor','none')
     set(h.lhandle(n),'Color',[0 0 0],'LineWidth',1)
 end
-n = find(fliplr(h.UserData.turnon) == cbo);
+n = find(fliplr(h.turnon) == cbo);% modified by Cong,  original is h.UserData.turnon, a bug?
 set(h.checkhandles(n),'Value',1)
 h.UserData.traces = CurrentRecords;
 guidata(gcbf,h);
@@ -1284,13 +1291,13 @@ guidata(gcbf,h);
 %--------------------------------------------------------------------------
 function turnoff_Callback (cbo,eventdata,handles)
 h = guidata(gcbf);
-n = find(h.UserData.turnoff == cbo);
-CurrentRecords = h.UserData.traces;
+n = find(h.turnoff == cbo);% modified by Cong,  original is h.UserData.turnoff, a bug?
+CurrentRecords = h.traces; %modified by Cong,  original is h.UserData.traces, a bug?
 CurrentRecords{n,5} = 0;
 set(h.phandle(n),'FaceColor',[.8 .8 .8],'EdgeColor','none')
 set(h.nhandle(n),'FaceColor',[.8 .8 .8],'EdgeColor','none')
 set(h.lhandle(n),'Color',[.5 .5 .5],'LineWidth',1)
-n = find(fliplr(h.UserData.turnoff) == cbo);
+n = find(fliplr(h.turnoff) == cbo);% modified by Cong,  original is h.UserData.turnoff, a bug?
 set(h.checkhandles(n),'Value',0)
 h.UserData.traces = CurrentRecords;
 guidata(gcbf,h);
@@ -1354,3 +1361,79 @@ h = findobj('Tag','TraceEditGui');
 Message = 'Cancelled';
 set(0,'userdata',Message);
 close(h);
+
+%--------------------------------------------------------------------------
+% plot_selection_Callback
+%
+%
+% add by Cong
+%--------------------------------------------------------------------------
+function plot_selection_callback (cbo,eventdata,handles)
+hdls = guidata(gcbf);
+h=findobj('Tag','TraceEditGui');
+CurrentRecords = h.UserData.traces;
+%% Get the active data
+RFAmps=[];RFPos=[];RFNeg=[];t=1;
+stackAmp=0;stackPos=0;stackNeg=0;
+for i=1:size(CurrentRecords,1)
+    if CurrentRecords{i,5}==1
+        RFAmps(:,t) = hdls.amps(:,find(hdls.indices==h.UserData.indices(i)));
+        RFPos(:,t)  = hdls.pamps(:,find(hdls.indices==h.UserData.indices(i)));
+        RFNeg(:,t)  = hdls.namps(:,find(hdls.indices==h.UserData.indices(i)));
+        Baz(t)      = CurrentRecords{i,22};
+        Pray(t)     = CurrentRecords{i,21};
+        stackAmp=stackAmp+hdls.amps(:,find(hdls.indices==h.UserData.indices(i)));
+        t=t+1;
+    end
+end
+[~, Baz_SortInd] = sort(Baz);       
+ [~, Pray_SortInd] = sort(Pray);       
+fi=figure('position',[300,300, 800, 1800]);
+subplot(1,2,1);
+NewTime = hdls.newtime;PatchTime = hdls.timeaxis;
+for i=1:length(Baz_SortInd)
+   plot(NewTime,RFAmps(:,Baz_SortInd(i))+i-1,'k');hold on;
+   patch(PatchTime,RFPos(:,Baz_SortInd(i))+i-1,[255 0 0]/255,'EdgeColor','none');
+   patch(PatchTime,RFNeg(:,Baz_SortInd(i))+i-1,[0,0,255]/255,'EdgeColor','none');   
+end
+stackAmp=stackAmp/length(Baz_SortInd);
+stackAmp=stackAmp/max(abs(stackAmp));
+stackAmp(1)=0;stackAmp(end)=0;
+stackPos=stackAmp;
+stackPos(find(stackAmp<=0))=0;
+stackNeg=stackAmp;
+stackNeg(find(stackAmp>=0))=0;
+plot(NewTime,stackAmp+i,'k');
+patch(NewTime,stackNeg+i,[0 204 0]/255,'EdgeColor','none');
+patch(NewTime,stackPos+i,[0 255 0]/255,'EdgeColor','none');
+line([0, 0],[-1, length(Baz_SortInd)+1.2],'Color','k','linewidth',1.2);
+
+yticks([0:length(Baz_SortInd)-1]);
+yticklabels(string(num2cell(floor(Baz(Baz_SortInd)))));
+ylim([-1 length(Baz_SortInd)+1.2]);
+xlim([-1,10]);
+ylabel('Back azimuth (^o)','fontsize',12);
+xlabel('Time (s)','fontsize',12);
+title([hdls.component ' Components'],'fontsize',15);
+grid on;
+
+subplot(1,2,2);
+for i=1:length(Pray_SortInd)
+   plot(NewTime,RFAmps(:,Pray_SortInd(i))+i-1,'k');hold on;
+   patch(PatchTime,RFPos(:,Pray_SortInd(i))+i-1,[255 0 0]/255,'EdgeColor','none');
+   patch(PatchTime,RFNeg(:,Pray_SortInd(i))+i-1,[0,0,255]/255,'EdgeColor','none');   
+end
+plot(NewTime,stackAmp+i,'k');
+patch(NewTime,stackNeg+i,[0 204 0]/255,'EdgeColor','none');
+patch(NewTime,stackPos+i,[0 255 0]/255,'EdgeColor','none');
+line([0, 0],[-1, length(Pray_SortInd)+1.2],'Color','k','linewidth',1.2);
+
+yticks([0:length(Pray_SortInd)-1]);
+yticklabels(string(num2cell(floor(1000*Pray(Pray_SortInd))/1000)));
+ylim([-1 length(Pray_SortInd)+1.2]);
+xlim([-1,10]);
+ylabel('Ray parameters','fontsize',12);
+xlabel('Time (s)','fontsize',12);
+title([hdls.component ' Components'],'fontsize',15);
+grid on;
+i
